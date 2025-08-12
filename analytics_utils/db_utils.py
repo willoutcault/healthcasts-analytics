@@ -6,7 +6,7 @@ import psycopg
 import pymysql
 
 import pandas as pd
-from ipynb.fs.full.config import POSTGRES_CREDS, MYSQL_CREDS
+from analytics_utils.config import POSTGRES_CREDS, MYSQL_CREDS
 
 def test_postgres_connection(creds=POSTGRES_CREDS) -> bool:
     try:

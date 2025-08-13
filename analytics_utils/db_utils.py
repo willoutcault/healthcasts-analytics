@@ -1,13 +1,15 @@
 # db_utils.py
-import re
-from datetime import datetime
-
 import psycopg
 import pymysql
+from sshtunnel import SSHTunnelForwarder
+
+import warnings
+warnings.filterwarnings(action='ignore')
 
 import pandas as pd
-from analytics_utils.config import POSTGRES_CREDS, MYSQL_CREDS
+from analytics_utils.config import POSTGRES_CREDS, MYSQL_CREDS, SSH_CREDS
 
+# --- Test Connection ---
 def test_postgres_connection(creds=POSTGRES_CREDS) -> bool:
     try:
         conn = psycopg.connect(**creds)
@@ -18,13 +20,24 @@ def test_postgres_connection(creds=POSTGRES_CREDS) -> bool:
         print("❌ PostgreSQL connection failed:", e)
         return False
 
-def test_mysql_connection(creds=MYSQL_CREDS) -> bool:
+def test_mysql_connection(my_creds=MYSQL_CREDS, ss_creds=SSH_CREDS) -> bool:
     try:
+        # Start SSH tunnel
+        server = SSHTunnelForwarder(
+            (ss_creds['ssh_host'], 22),
+            ssh_username=ss_creds['ssh_user'],
+            ssh_pkey=ss_creds['ssh_key_path'],
+            remote_bind_address=(my_creds['mysql_host'], my_creds['mysql_port']),
+            local_bind_address=('127.0.0.1', 3307)  # Local port forwarded
+        )
+        server.start()
+        # Connect to MySQL using pymysql
         conn = pymysql.connect(
-            host=creds["host"],
-            user=creds["user"],
-            password=creds["password"],
-            port=creds["port"]
+            host='127.0.0.1',
+            port=server.local_bind_port,
+            user=my_creds['mysql_user'],
+            password=my_creds['mysql_password'],
+            db=my_creds['mysql_db']
         )
         conn.close()
         print("✅ MySQL connection successful.")
@@ -136,7 +149,7 @@ def run_adbutler_banner_impression_query(program_ids, creds=POSTGRES_CREDS):
         print("❌ AdButler banner impression query failed:", e)
         return pd.DataFrame()
     
-def run_choozle_banner_engagement_query(program_ids, creds=MYSQL_CREDS):
+def run_choozle_banner_engagement_query(program_ids, my_creds=MYSQL_CREDS, ss_creds=SSH_CREDS):
     """
     Fetch Choozle banner ad impressions and clicks for one or more program IDs.
     Filters to users in BTL concentrate. Returns a pandas DataFrame.
@@ -175,11 +188,22 @@ def run_choozle_banner_engagement_query(program_ids, creds=MYSQL_CREDS):
     """
 
     try:
+        # Start SSH tunnel
+        server = SSHTunnelForwarder(
+            (ss_creds['ssh_host'], 22),
+            ssh_username=ss_creds['ssh_user'],
+            ssh_pkey=ss_creds['ssh_key_path'],
+            remote_bind_address=(my_creds['mysql_host'], my_creds['mysql_port']),
+            local_bind_address=('127.0.0.1', 3307)  # Local port forwarded
+        )
+        server.start()
+        # Connect to MySQL using pymysql
         conn = pymysql.connect(
-            host=creds["host"],
-            user=creds["user"],
-            password=creds["password"],
-            port=creds["port"]
+            host='127.0.0.1',
+            port=server.local_bind_port,
+            user=my_creds['mysql_user'],
+            password=my_creds['mysql_password'],
+            db=my_creds['mysql_db']
         )
         with conn.cursor() as cur:
             # Use the same list of program_ids for both placeholders
@@ -245,6 +269,7 @@ def run_combined_engagement_query(
     program_ids,
     pg_creds=POSTGRES_CREDS,
     my_creds=MYSQL_CREDS,
+    ss_creds=SSH_CREDS,
     campaign_type="custom"  # "custom" or "turnkey"
 ):
     """
@@ -269,7 +294,7 @@ def run_combined_engagement_query(
     if campaign_type == "custom":
         dfs.append(run_asset_view_query(program_ids, pg_creds))
         dfs.append(run_survey_response_query(program_ids, pg_creds))
-        dfs.append(run_choozle_banner_engagement_query(program_ids, my_creds))
+        dfs.append(run_choozle_banner_engagement_query(program_ids, my_creds, ss_creds))
     elif campaign_type == "turnkey":
         dfs.append(run_adbutler_banner_impression_query(program_ids, pg_creds))
     else:
@@ -336,7 +361,7 @@ def run_combined_engagement_query(
     print(f"✅ Combined {campaign_type} engagement dataset contains {len(combined_df)} rows and {len(combined_df.columns)} columns.")
     return combined_df
 
-def run_time_spent_summary_query(program_ids, creds=MYSQL_CREDS):
+def run_time_spent_summary_query(program_ids, my_creds=MYSQL_CREDS, ss_creds=SSH_CREDS):
     if isinstance(program_ids, int):
         program_ids = [program_ids]
 
@@ -372,11 +397,22 @@ def run_time_spent_summary_query(program_ids, creds=MYSQL_CREDS):
     """
 
     try:
+        # Start SSH tunnel
+        server = SSHTunnelForwarder(
+            (ss_creds['ssh_host'], 22),
+            ssh_username=ss_creds['ssh_user'],
+            ssh_pkey=ss_creds['ssh_key_path'],
+            remote_bind_address=(my_creds['mysql_host'], my_creds['mysql_port']),
+            local_bind_address=('127.0.0.1', 3307)  # Local port forwarded
+        )
+        server.start()
+        # Connect to MySQL using pymysql
         conn = pymysql.connect(
-            host=creds["host"],
-            user=creds["user"],
-            password=creds["password"],
-            port=creds["port"]
+            host='127.0.0.1',
+            port=server.local_bind_port,
+            user=my_creds['mysql_user'],
+            password=my_creds['mysql_password'],
+            db=my_creds['mysql_db']
         )
         with conn.cursor() as cur:
             cur.execute(query, program_ids)

@@ -1,14 +1,21 @@
 POSTGRES_CREDS = {
-    "host": "example_host",
-    "dbname": "example_db",
-    "user": "example_user",
-    "password": "example_password",
+    "host": "pg_host",
+    "dbname": "pg_db",
+    "user": "pg_username",
+    "password": "pg_password",  # move to env var in future
     "port": 5432
 }
 
 MYSQL_CREDS = {
-    "host": "example_host",
-    "user": "example_user",
-    "password": "example_password",
-    "port": 3306
+    "mysql_host": "mysql_host",
+    "mysql_user": "mysql_user",
+    "mysql_password": "mysql_password",  # move to env var in future
+    "mysql_db": "mysql_db",
+    "mysql_port": 3306
+}
+
+SSH_CREDS = {
+    "ssh_host": "ssh_host",
+    "ssh_user": "ssh_user",
+    "ssh_key_path": r"C:\Path\to\Secret_Key.pem"
 }

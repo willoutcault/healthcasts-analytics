@@ -1,6 +1,9 @@
-__pycache__/
-*.pyc
-venv/
+# Virtual envs
+.venv/
+
+# Secrets / keys
 analytics_utils/config.py
-.DS_Store
-Thumbs.db
+
+# Cache
+analytics_utils/__pycache__
+examples/__pycache__

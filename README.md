@@ -11,3 +11,13 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
 #### Mac
 source .venv/bin/activate
+
+### Dash UI (local)
+
+```bash
+pip install -r dash_app/requirements-dash.txt
+copy dash_app\.env.example .env  # then fill values
+python dash_app/app.py
+```
+
+App runs at http://127.0.0.1:8051
